@@ -122,9 +122,9 @@ class custom_build_py(build_py):
     def run(self):
         """Build the package. """
         # build documentation.
-        self._build_doc()
+        # self._build_doc()
         # build the xacro files into urdf files.
-        self._build_xacro()
+        # self._build_xacro()
         # distutils uses old-style classes, so no super()
         build_py.run(self)
 
@@ -137,7 +137,7 @@ setup(
     package_data={package_name: resources},
     scripts=scripts_list,
     install_requires=["setuptools", 
-                      "xacro", 
+                    #   "xacro", 
                       "pybullet", 
                       "importlib_resources",
                       "meshcat",
