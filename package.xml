@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+    
+    <name>robot_properties_talos</name>
+    
+    <version>1.0.0</version>
+    
+    <description>
+        URDFs of the TALOS robot and configurations files for different
+        application like controllers, planners and so forth.
+    </description>
+    
+    <author email="sk8001@nyu.edu">Sébastien Kleff</author>
+    <maintainer email="sk8001@nyu.edu">Sébastien Kleff</maintainer>
+    
+    <license>BSD-3-clause</license>
+
+    <buildtool_depend>ament_python</buildtool_depend>
+
+    <depend>pybullet</depend>
+    <depend>pinocchio_bullet</depend>
+    <depend>pinocchio</depend>
+    <depend>xacro</depend>
+
+    <test_depend>ament_copyright</test_depend>
+    <test_depend>ament_flake8</test_depend>
+    <test_depend>ament_pep257</test_depend>
+    <test_depend>python3-pytest</test_depend>
+
+    <export>
+        <build_type>ament_python</build_type>
+    </export>
+</package>
