@@ -33,7 +33,7 @@ class TalosArmRobot(PinBulletWrapper):
             self.urdf_path,
             pos, orn,
             flags=pybullet.URDF_USE_INERTIA_FROM_FILE,
-            useFixedBase=True)
+            useFixedBase=False)
         pybullet.getBasePositionAndOrientation(self.robotId)
         
         # Create the robot wrapper in pinocchio.

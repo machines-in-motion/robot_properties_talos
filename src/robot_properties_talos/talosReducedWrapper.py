@@ -36,15 +36,13 @@ class TalosReducedRobot(PinBulletWrapper):
                 self.urdf_path,
                 pos, orn,
                 flags=pybullet.URDF_USE_INERTIA_FROM_FILE,
-                useFixedBase=False)
+                useFixedBase=True)
         pybullet.getBasePositionAndOrientation(self.robotId)
         
         # Create the robot wrapper in pinocchio (reduced model)
         robot_full = TalosFullConfig.buildRobotWrapper()
         # 34 joints = universe + root + grippers + legs,arms,torso,head 
         #              (1)        (1)    (2)         (30)
-        # print("fullmodel.names = ", str(len([name for name in robot_full.model.names])))
-        # print(robot_full.model)
         # Query all the joints.
         num_joints = pybullet.getNumJoints(self.robotId)
 
@@ -65,29 +63,20 @@ class TalosReducedRobot(PinBulletWrapper):
         controlled_joints_ids = []
         for joint_name in controlled_joints:
             controlled_joints_ids.append(robot_full.model.getJointId(joint_name))
-        # print('Controlled joint names '+'('+str(len(controlled_joints))+') : ')
-        # print(controlled_joints)
-        # print('Controlled joint pinocchio ids '+'('+str(len(controlled_joints_ids))+') : ')
-        # print(controlled_joints_ids)
 
-        # Joint names to lock
+        # Joint names & pin ids to lock
         uncontrolled_joints = [] # 27 = 34 - 6 (controlled) - 1(universe)
         for joint_name in robot_full.model.names[1:]:
             if(joint_name not in controlled_joints):
                 uncontrolled_joints.append(joint_name)
-        # print('uncontrolled joint names '+'('+str(len(uncontrolled_joints))+') : ')
-        # print(uncontrolled_joints)
-        # Pinocchio joint ids to lock
         locked_joints_ids = [robot_full.model.getJointId(joint_name) for joint_name in uncontrolled_joints]
-        # locked_joints_ids.pop(0) # exclude root joint : 27 ids (removed root because reduced model is fixed-base)
-        # print('Locked joints ids in pinocchio '+'('+str(len(locked_joints_ids))+') : ')
-        # print(locked_joints_ids)
-        # Build reduced model with ref posture for locked joints
-        qref = robot_full.model.referenceConfigurations['half_sitting'] # 39 : 7 dof difference = quaternion (base orientation in WORLD)
-        # print('ref config '+'('+str(len(qref))+') : ')
-        # print(qref)
-        # 7 quat (root_joint) # leg left_1-6 # leg_right_1-6 # torso_1-2 # arm_left_1-7 # arm_right_1-7 # head_1-2 # ??? 
+        print('Locked joints ids in pinocchio '+'('+str(len(locked_joints_ids))+') : ')
+        print(locked_joints_ids)
         
+        # Build reduced model with ref posture for locked joints
+        qref = robot_full.model.referenceConfigurations['half_sitting'] 
+        # 7 quat (root_joint) # leg left_1-6 # leg_right_1-6 # torso_1-2 # arm_left_1-7 # arm_right_1-7 # head_1-2 # gripper_LR = 39 
+        # Retain locked joints reference position for later
         qref_locked_map = {}
         if('root_joint' in uncontrolled_joints):
             # print("map root joint "+str(qref[0:7]))
@@ -97,14 +86,14 @@ class TalosReducedRobot(PinBulletWrapper):
                 idx = 6+robot_full.model.getJointId(joint_name)-1
                 # print("map "+str(joint_name) + " (id = "+str(idx) +") : " + str(qref[idx]))
                 qref_locked_map[joint_name] = qref[idx]
-
+        # Make reduced model and wrapper
         reduced_model, [visual_model, collision_model] = pin.buildReducedModel(robot_full.model, 
                                                                                [robot_full.visual_model, robot_full.collision_model], 
                                                                                locked_joints_ids, 
                                                                                qref)   
         self.pin_robot = pin.robot_wrapper.RobotWrapper(reduced_model, collision_model, visual_model)  
-
         print("[pinbullet wrapper] REDUCED MODEL : ", self.pin_robot.model)
+        
         # base and EE
         self.base_link_name = "base_link"
         self.end_eff_ids = []
@@ -120,13 +109,11 @@ class TalosReducedRobot(PinBulletWrapper):
         uncontrolled_joints.remove('root_joint') # base treated in sim
         locked_joint_ids_bullet = np.array([bullet_joint_map[name] for name in uncontrolled_joints])
         qref_locked = [qref_locked_map[joint_name] for joint_name in uncontrolled_joints]
-        # print('bullet locked joint ids '+'('+str(len(locked_joint_ids_bullet))+') : ')
-        # print(locked_joint_ids_bullet)
-        # print('ref config LOCKED '+'('+str(len(qref_locked))+') : ')
-        # print(qref_locked)
+        print('bullet locked joint ids '+'('+str(len(locked_joint_ids_bullet))+') : ')
+        print(locked_joint_ids_bullet)
         # Lock the uncontrolled joints in position control in PyBullet multibody (full robot)
         for joint_name in uncontrolled_joints:
-            print("joint name : " + joint_name + " , bullet joint id = ", bullet_joint_map[joint_name])
+            # print("joint name : " + joint_name + " , bullet joint id = ", bullet_joint_map[joint_name])
             pybullet.resetJointState(self.robotId, bullet_joint_map[joint_name], qref_locked_map[joint_name], 0.)
         pybullet.setJointMotorControlArray(self.robotId, 
                                            jointIndices = locked_joint_ids_bullet, 
