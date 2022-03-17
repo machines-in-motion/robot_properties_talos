@@ -37,7 +37,7 @@ class TalosArmConfig(TalosAbstract):
     Config class for the Talos left arm 
     '''
     loader = example_robot_data.robots_loader.TalosArmLoader()
-    urdf_path   = loader.df_path
+    urdf_path   = loader.urdf_path
     meshes_path = loader.model_path
     robot_name  = 'talos_arm'
     # Pinocchio model.
@@ -82,7 +82,7 @@ class TalosFullConfig(TalosAbstract):
     Config class for the Talos full model 
     '''
     loader = example_robot_data.robots_loader.TalosLoader()
-    urdf_path   = loader.df_path
+    urdf_path   = loader.urdf_path
     meshes_path = loader.model_path
     robot_name  = 'talos'
     # Pinocchio model.
@@ -145,42 +145,3 @@ class TalosFullConfig(TalosAbstract):
     q0[:] = initial_configuration
     v0 = zero(robot_model.nv)
     a0 = zero(robot_model.nv)
-
-
-
-class TalosReducedConfig(TalosFullConfig):
-    '''
-    Config class for the Talos full model 
-    '''
-    # Override build_robot_wrapper to generate reduced model
-    @classmethod
-    def buildRobotWrapper(cls):
-        # Rebuild the robot wrapper instead of using the existing model to
-        # also load the visuals.
-        robot_full = example_robot_data.load(cls.robot_name) 
-        controlled_joints = ['torso_1_joint',   
-                                'torso_2_joint', 
-                                'arm_right_1_joint', 
-                                'arm_right_2_joint', 
-                                'arm_right_3_joint', 
-                                'arm_right_4_joint']
-        controlled_joints_ids = []
-        for joint_name in controlled_joints:
-            controlled_joints_ids.append(robot_full.model.getJointId(joint_name))
-        locked_joints_ids = []
-        for joint_name in robot_full.model.names:
-            if(joint_name not in controlled_joints):
-                locked_joints_ids.append(robot_full.model.getJointId(joint_name))
-        locked_joints_ids.pop(0) # excl. root joint
-        qref = robot_full.model.referenceConfigurations['half_sitting']
-        import pinocchio as pin
-        reduced_model, [visual_model, collision_model] = pin.buildReducedModel(robot_full.model, [robot_full.visual_model, robot_full.collision_model], locked_joints_ids, qref)      
-        # print(reduced_model)
-        robot = pin.robot_wrapper.RobotWrapper(reduced_model, collision_model, visual_model)  
-        return robot
-
-    def joint_name_in_single_string(self):
-        joint_names = ""
-        for name in self.robot_model.names[2:]:
-            joint_names += name + " "
-        return joint_names
