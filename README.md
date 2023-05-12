@@ -66,7 +66,7 @@ robot = env.add_robot(TalosReducedRobot())
 
 ### Copyrights
 
-Copyright(c) 2018-2021 Max Planck Gesellschaft, New York University
+Copyright(c) 2018-2023 Max Planck Gesellschaft, New York University
 
 ### License
 
